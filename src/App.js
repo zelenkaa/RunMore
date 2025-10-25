@@ -7,7 +7,7 @@ function App() {
 
     try {
       const text = await (await fetch(`/api/Function1`)).text();
-      setData(text + "___");
+      setData(text);
     }
     catch (ex) {
       setData(ex);
@@ -18,7 +18,18 @@ function App() {
 
     try {
       const text = await (await fetch(`/api/Function2`)).text();
-      setData(text + "___");
+      setData(text);
+    }
+    catch (ex) {
+      setData(ex);
+    }
+  }
+
+  async function handleFunction3Click() {
+
+    try {
+      const text = await (await fetch(`/api/Function3`)).text();
+      setData(text);
     }
     catch (ex) {
       setData(ex);
@@ -31,12 +42,13 @@ function App() {
       <tbody>
 
         <tr>
-          <td>Function 1</td>
           <td><button onClick={handleFunction1Click}>Function 1</button></td>
         </tr>
         <tr>
-          <td>Function 2</td>
           <td><button onClick={handleFunction2Click}>Function 2</button></td>
+        </tr>
+        <tr>
+          <td><button onClick={handleFunction3Click}>Function 3</button></td>
         </tr>
         <tr>
           <th colSpan="2">Results</th>
