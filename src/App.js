@@ -1,66 +1,55 @@
-import React, { useState } from 'react';
+// App.jsx
+import React, { useEffect, useRef, useState } from 'react';
+import LoginPage from './components/LoginPage';
+import HomePage from './components/HomePage';
 
-function App() {
-  const [data, setData] = useState('X');
+export default function App() {
+  const [debug, setDebug] = useState(null);
+  const [clientPrincipal, setClientPrincipal] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [latestDate, setLatestDate] = useState(null);
 
-  async function handleFunction1Click() {
+  useEffect(() => {
+    const checkLogin = async () => {
 
-    try {
-      const text = await (await fetch(`/api/Function1`)).text();
-      setData(text);
-    }
-    catch (ex) {
-      setData(ex);
-    }
-  }
+      const res = await fetch('/.auth/me');
+      try {        
+        const data = await res.json();
+        setDebug(false);
+        setClientPrincipal(data.clientPrincipal);
+      } catch {
+        setDebug(true);
+        setClientPrincipal({ "userId": "add85db9ad7fa2ea87a10483759a17aa", "userRoles": ["anonymous", "authenticated"], "claims": [], "identityProvider": "aad", "userDetails": "azelenka@interiorrunningassociation.com" });
+      }
+    };
 
-  async function handleFunction2Click() {
+    checkLogin();
+  }, []);
 
-    try {
-      const text = await (await fetch(`/api/Function2`)).text();
-      setData(text);
-    }
-    catch (ex) {
-      setData(ex);
-    }
-  }
-
-  async function handleFunction3Click() {
-
-    try {
-      const text = await (await fetch(`/api/Function3`)).text();
-      setData(text);
-    }
-    catch (ex) {
-      setData(ex);
-    }
-  }
-
-
-  return <>
-    <table>
-      <tbody>
-
-        <tr>
-          <td><button onClick={handleFunction1Click}>Function 1</button></td>
-        </tr>
-        <tr>
-          <td><button onClick={handleFunction2Click}>Function 2</button></td>
-        </tr>
-        <tr>
-          <td><button onClick={handleFunction3Click}>Function 3</button></td>
-        </tr>
-        <tr>
-          <th colSpan="2">Results</th>
-        </tr>
-        <tr>
-          <td colSpan="2">{data}</td>
-        </tr>
-      </tbody>
-    </table>
+  useEffect(() => {
+    if(clientPrincipal === null) return;
+    
+    const fetchUserId = async () => {
+      const res = await fetch('/api/login');
+      try {
+        const data = await res.json();
+        setUserId(data.userId);
+        setLatestDate(data.latest);
+      }
+      catch {
+        setUserId("debug: 1");        
+        setLatestDate("debug: 1");
+      }
+    };
+    fetchUserId();
+  }, [clientPrincipal]);
 
 
-  </>;
+  return (
+    <div>
+      <p>User ID: {userId}</p>
+      {clientPrincipal ? <a href={debug ? "" : "/.auth/logout"}>Log out</a> : null}
+      {clientPrincipal ? <HomePage /> : <LoginPage />}
+    </div>
+  );
 }
-
-export default App;
