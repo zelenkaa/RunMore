@@ -1,9 +1,48 @@
 onmessage = async function (e) {
-    const input = e.data;
 
-    const activities = await (await fetch(`/test_data/activities.json`)).json();
+    getRuns();
 
-    const activityCount = activities.length;
-
-    postMessage(activityCount);
 };
+
+
+function getRuns() {
+    const request = indexedDB.open("RunMoreDB", 1);
+
+    request.onupgradeneeded = (event) => {
+        console.log("Upgrading database...");
+
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains("runs")) {
+            db.createObjectStore("runs", { keyPath: ["userId", "id"] });
+        }
+    };
+
+    request.onsuccess = (event) => {
+        const db = event.target.result;
+        const tx = db.transaction("runs", "readwrite");
+        const store = tx.objectStore("runs");
+
+        const runsReq = store.getAll();
+
+
+
+        tx.oncomplete = () => getSummary(runsReq.result);
+        tx.onerror = (err) => console.error("Transaction error", err);
+    };
+}
+
+function getSummary(runs) {
+    const totalRuns = runs.length;
+    let minDate = null;
+    let maxDate = null;
+    for (let i = 0; i < runs.length; i++) {
+        const run = runs[i];
+        if (minDate === null || run.dateTime < minDate) {
+            minDate = run.dateTime;
+        }
+        if (maxDate === null || run.dateTime > maxDate) {
+            maxDate = run.dateTime;
+        }
+    }
+    postMessage({ totalRuns, minDate, maxDate });
+}
