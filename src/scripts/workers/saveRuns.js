@@ -31,13 +31,11 @@ function saveRuns(runs) {
   request.onsuccess = (event) => {
     const db = event.target.result;
 
-
     const tx = db.transaction("runs", "readwrite");
     const store = tx.objectStore("runs");
 
     runs.forEach(item => store.put(item));
-
-    tx.oncomplete = () => null;
+    
     tx.onerror = (err) => console.error("Transaction error", err);
   };
 }

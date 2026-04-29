@@ -11,6 +11,7 @@ export default function App() {
   const [runsToSave, setRunsToSave] = useState(null);
   const [refreshSummary, setRefreshSummary] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [isMissingLaps, setIsMissingLaps] = useState(null);
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -43,7 +44,16 @@ export default function App() {
   useEffect(() => {
     if (user === null) return;
 
-    setRunDate(new Date(new Date().getFullYear() + 2, 11, 31));
+    const refreshActivities = async () => {
+      if (debug) {
+        setRunDate(new Date(new Date().getFullYear() + 1, 0, 1));
+      } else {
+        const res = await fetch('/api/refresh_activities', { method: 'POST' });
+
+        setRunDate(new Date(new Date().getFullYear() + 1, 0, 1));
+      }
+    };
+    refreshActivities();
 
   }, [user]);
 
@@ -65,20 +75,34 @@ export default function App() {
   useEffect(() => {
     if (runsToSave === null) return;
 
-    const worker = new Worker(new URL("./scripts/workers/saveRuns.js", import.meta.url));
+    const checkRunsWorker = new Worker(new URL("./scripts/workers/checkRuns.js", import.meta.url));
+    const saveRunsWorker = new Worker(new URL("./scripts/workers/saveRuns.js", import.meta.url));
 
-    worker.onmessage = (e) => {
+    let runExists = false;
+
+    checkRunsWorker.onmessage = (e) => {
+      const result = e.data;
+      if (result.exists === true) {
+        runExists = true;
+      }
+      saveRunsWorker.postMessage(runsToSave);
+    };
+
+    saveRunsWorker.onmessage = (e) => {
       const minDate = e.data;
-      if (minDate instanceof Date && minDate < runDate) {
+      if (runExists === false && minDate instanceof Date && minDate < runDate) {
         setRunDate(minDate);
       } else {
         setRefreshSummary(true);
       }
     };
 
-    worker.postMessage(runsToSave);
+    checkRunsWorker.postMessage(runsToSave);
 
-    return () => worker.terminate();
+    return () => {
+      checkRunsWorker.terminate();
+      saveRunsWorker.terminate();
+    };
   }, [runsToSave]);
 
 
@@ -89,12 +113,43 @@ export default function App() {
 
     worker.onmessage = (e) => {
       setSummary(e.data);
+      setIsMissingLaps(true);
     };
 
     worker.postMessage(null);
 
     return () => worker.terminate();
   }, [refreshSummary]);
+
+
+  useEffect(() => {
+    if (isMissingLaps === null) return;
+
+    if (isMissingLaps === true) {
+      const isMissingLapsFunc = async () => {
+        const res = await fetch('/api/is_missing_laps');
+        const data = await res.json();
+
+        if (data.isMissingLaps) {
+          console.log("Missing Laps");
+        } else {
+          console.log("All Laps Loaded");
+          clearInterval(interval);
+          setIsMissingLaps(false);
+        }
+
+        setIsMissingLaps(data.isMissingLaps);
+      };
+
+      isMissingLapsFunc();
+
+      const interval = setInterval(() => {
+        isMissingLapsFunc();
+      }, 10000);
+    } else {
+      setRunDate(new Date(runDate));
+    }
+  }, [isMissingLaps]);
 
 
   const deauthorize = async () => {

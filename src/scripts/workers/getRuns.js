@@ -1,7 +1,5 @@
 onmessage = async function (e) {
-
     getRuns();
-
 };
 
 
@@ -9,7 +7,6 @@ function getRuns() {
     const request = indexedDB.open("RunMoreDB", 1);
 
     request.onupgradeneeded = (event) => {
-        console.log("Upgrading database...");
 
         const db = event.target.result;
         if (!db.objectStoreNames.contains("runs")) {
@@ -24,10 +21,11 @@ function getRuns() {
 
         const runsReq = store.getAll();
 
-
-
         tx.oncomplete = () => getSummary(runsReq.result);
-        tx.onerror = (err) => console.error("Transaction error", err);
+        tx.onerror = (err) => {
+            console.error("Transaction error", err);
+            postMessage({ totalRuns: 0, minDate: null, maxDate: null });
+        };
     };
 }
 
