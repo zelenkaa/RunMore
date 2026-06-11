@@ -12,7 +12,7 @@ export default function App() {
 
   let strava;
   if (user && !user.token) {
-    const strava_athorization = "http://www.strava.com/oauth/authorize?client_id=76091&response_type=code&redirect_uri=" + window.location.origin + "/api/authorize&approval_prompt=force&scope=read,read_all,profile:read_all,activity:read_all";
+    const strava_athorization = "http://www.strava.com/oauth/authorize?client_id=257154&response_type=code&redirect_uri=" + window.location.origin + "/api/authorize&approval_prompt=force&scope=read,read_all,profile:read_all,activity:read_all";
     strava = <a href={strava_athorization}>Connect to Strava</a>;
   } else if (user && user.token) {
     strava = <button onClick={debug ? null : deauthorize}>Disconnect from Strava</button>;
